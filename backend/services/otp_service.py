@@ -44,39 +44,36 @@ async def verify_otp(identifier: str, code: str, purpose: str) -> bool:
     return True
 
 async def send_email_otp(to_email: str, otp: str, name: str, purpose: str) -> bool:
-    # Always print OTP to terminal for easy access
     print(f"\n{'='*50}")
     print(f"📧 OTP for {to_email}: {otp}")
     print(f"{'='*50}\n")
 
-    # Try sending email if configured
-    if not settings.SMTP_USER or not settings.SMTP_PASSWORD:
-        return True  # Return True so flow doesn't break
-
     try:
-        import aiosmtplib
-        from email.mime.multipart import MIMEMultipart
-        from email.mime.text import MIMEText
+        import resend
+        resend.api_key = settings.RESEND_API_KEY
 
-        msg = MIMEMultipart("alternative")
-        msg["Subject"] = f"{otp} is your CursoryHire OTP"
-        msg["From"]    = f"{settings.FROM_NAME} <{settings.FROM_EMAIL}>"
-        msg["To"]      = to_email
-        msg.attach(MIMEText(f"<h2>Your OTP is: {otp}</h2><p>Valid for 10 minutes.</p>", "html"))
-
-        await aiosmtplib.send(
-            msg,
-            hostname=settings.SMTP_HOST,
-            port=settings.SMTP_PORT,
-            username=settings.SMTP_USER,
-            password=settings.SMTP_PASSWORD,
-            start_tls=True,
-        )
-        print(f"✅ Email sent to {to_email}")
+        resend.Emails.send({
+            "from": "CursoryHire <onboarding@resend.dev>",
+            "to": to_email,
+            "subject": f"{otp} is your CursoryHire OTP",
+            "html": f"""
+                <div style="font-family:sans-serif;max-width:500px;margin:40px auto;padding:32px;border-radius:16px;border:1px solid #e2e8f0">
+                    <h2 style="color:#2563eb">CursoryHire</h2>
+                    <p>Hi {name},</p>
+                    <p>Your OTP for {purpose} is:</p>
+                    <div style="background:#f1f5f9;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
+                        <h1 style="font-size:40px;letter-spacing:12px;color:#2563eb;margin:0">{otp}</h1>
+                        <p style="color:#64748b;margin:8px 0 0">Valid for 10 minutes</p>
+                    </div>
+                    <p style="color:#64748b">If you didn't request this, ignore this email.</p>
+                </div>
+            """
+        })
+        print(f"✅ Email sent via Resend to {to_email}")
+        return True
     except Exception as e:
-        print(f"⚠️ Email failed (but OTP printed above): {e}")
-
-    return True  # Always return True
+        print(f"⚠️ Resend email failed: {e}")
+        return True
 
 async def send_sms_otp(to_phone: str, otp: str) -> bool:
     # Always print OTP to terminal

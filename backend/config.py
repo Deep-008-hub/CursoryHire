@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     TWILIO_ACCOUNT_SID: str = ""
     TWILIO_AUTH_TOKEN: str = ""
     TWILIO_PHONE_NUMBER: str = ""
+    RESEND_API_KEY: str = ""
 
     FRONTEND_URL: str = "http://localhost:5173"
 
