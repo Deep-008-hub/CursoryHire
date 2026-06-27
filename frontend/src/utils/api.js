@@ -1,15 +1,19 @@
 import axios from 'axios'
 
-const api = axios.create({ baseURL: '/api' })
+const isLocalhost = window.location.hostname === 'localhost'
 
-// Attach JWT token to every request
+const BASE_URL = isLocalhost 
+  ? '/api'  
+  : 'https://cursoryhire-production.up.railway.app'
+
+const api = axios.create({ baseURL: BASE_URL })
+
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('ch_token')
   if (token) config.headers.Authorization = `Bearer ${token}`
   return config
 })
 
-// Handle 401 globally
 api.interceptors.response.use(
   (res) => res,
   (err) => {
