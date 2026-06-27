@@ -35,3 +35,48 @@ async def health():
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run("main:app", host="0.0.0.0", port=8000, reload=True)
+
+# ── WebSocket Signaling for WebRTC ────────────────────────────────────────
+from fastapi import WebSocket, WebSocketDisconnect
+from typing import Dict, List
+import json
+
+rooms: Dict[str, List[WebSocket]] = {}
+
+@app.websocket("/ws/room/{room_id}")
+async def websocket_room(websocket: WebSocket, room_id: str):
+    await websocket.accept()
+
+    if room_id not in rooms:
+        rooms[room_id] = []
+    rooms[room_id].append(websocket)
+
+    print(f"User joined room {room_id}. Total: {len(rooms[room_id])}")
+
+    try:
+        for ws in rooms[room_id]:
+            if ws != websocket:
+                await ws.send_text(json.dumps({
+                    "type": "peer-joined",
+                    "count": len(rooms[room_id])
+                }))
+
+        while True:
+            data = await websocket.receive_text()
+            msg  = json.loads(data)
+            for ws in rooms[room_id]:
+                if ws != websocket:
+                    await ws.send_text(json.dumps(msg))
+
+    except WebSocketDisconnect:
+        rooms[room_id].remove(websocket)
+        print(f"User left room {room_id}. Remaining: {len(rooms[room_id])}")
+
+        for ws in rooms[room_id]:
+            try:
+                await ws.send_text(json.dumps({"type": "peer-left"}))
+            except:
+                pass
+
+        if not rooms[room_id]:
+            del rooms[room_id]
