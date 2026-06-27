@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { LayoutDashboard, Briefcase, Bell, User, FileText, Save, Plus, X, Loader2, Upload, CheckCircle } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Bell, User, FileText, Save, Plus, X, Loader2, Upload, CheckCircle, Camera } from 'lucide-react'
 import PortalLayout from '../../components/PortalLayout'
 import { CAND_NAV } from './CandDashboard'
 import api from '../../utils/api'
@@ -8,9 +8,12 @@ import toast from 'react-hot-toast'
 import useAuthStore from '../../store/authStore'
 
 export default function CandProfile() {
-  const { user } = useAuthStore()
+ const { user } = useAuthStore()
   const qc = useQueryClient()
   const fileRef = useRef()
+  const avatarRef = useRef()
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const [avatarUrl,     setAvatarUrl]     = useState(null)
   const [loading,      setLoading]      = useState(false)
   const [resumeLoading,setResumeLoading]= useState(false)
   const [skillInp,     setSkillInp]     = useState('')
@@ -47,6 +50,25 @@ export default function CandProfile() {
       setResumeText(p.resume_text || '')
     }
   }, [meData])
+  useEffect(() => {
+    if (meData?.user?.avatar_url) setAvatarUrl(meData.user.avatar_url)
+  }, [meData])
+
+  const handleAvatarChange = async (file) => {
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) return toast.error('Image must be under 2MB')
+    try {
+      setAvatarLoading(true)
+      const fd = new FormData()
+      fd.append('avatar', file)
+      const res = await api.post('/users/upload-avatar', fd)
+      setAvatarUrl(res.data.avatar_url)
+      toast.success('Profile picture updated!')
+      qc.invalidateQueries(['me'])
+    } catch (e) {
+      toast.error('Failed to upload image')
+    } finally { setAvatarLoading(false) }
+  }
 
   const addSkill = () => {
     const v = skillInp.trim()
@@ -123,6 +145,39 @@ export default function CandProfile() {
         </div>
 
         {/* Completeness bar */}
+        {/* Avatar */}
+        <div className="card mb-6 flex items-center gap-5">
+          <div className="relative flex-shrink-0">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile"
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-200" />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center text-white font-display font-bold text-3xl">
+                {user?.full_name?.[0]?.toUpperCase() || 'C'}
+              </div>
+            )}
+            <button
+              onClick={() => avatarRef.current?.click()}
+              disabled={avatarLoading}
+              className="absolute -bottom-2 -right-2 w-8 h-8 bg-emerald-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-emerald-700 transition-colors"
+            >
+              {avatarLoading
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Camera className="w-4 h-4" />
+              }
+            </button>
+            <input ref={avatarRef} type="file" accept="image/jpeg,image/png,image/webp"
+              className="hidden" onChange={e => handleAvatarChange(e.target.files[0])} />
+          </div>
+          <div>
+            <div className="font-display font-bold text-xl text-slate-900">{user?.full_name}</div>
+            <div className="text-slate-500 text-sm">{form.headline || 'Add your headline'}</div>
+            <button onClick={() => avatarRef.current?.click()}
+              className="text-xs text-emerald-600 hover:underline mt-1">
+              Change profile picture
+            </button>
+          </div>
+        </div>
         <div className="card mb-6">
           <div className="flex items-center justify-between mb-2">
             <span className="font-semibold text-slate-800 text-sm">Profile completeness</span>
