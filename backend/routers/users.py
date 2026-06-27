@@ -84,3 +84,41 @@ async def extract_resume(
         if tmp_path and os.path.exists(tmp_path):
             try: os.remove(tmp_path)
             except: pass
+            
+@router.post("/upload-avatar")
+async def upload_avatar(
+    avatar: UploadFile = File(...),
+    user=Depends(get_current_user)
+):
+    """Upload profile picture to Supabase Storage."""
+    if avatar.content_type not in ["image/jpeg", "image/png", "image/webp", "image/gif"]:
+        raise HTTPException(400, "Only JPEG, PNG or WebP images allowed")
+
+    contents = await avatar.read()
+    if len(contents) > 2 * 1024 * 1024:
+        raise HTTPException(400, "Image must be under 2MB")
+
+    try:
+        db = get_db()
+        ext = avatar.filename.split('.')[-1].lower()
+        file_path = f"{user['id']}.{ext}"
+
+        # Upload to Supabase Storage
+        db.storage.from_("avatars").upload(
+            file_path,
+            contents,
+            {"content-type": avatar.content_type, "upsert": "true"}
+        )
+
+        # Get public URL
+        url = db.storage.from_("avatars").get_public_url(file_path)
+
+        # Update user avatar_url in database
+        db.table("users").update({"avatar_url": url})\
+            .eq("id", user["id"]).execute()
+
+        return {"avatar_url": url, "message": "Avatar uploaded successfully"}
+
+    except Exception as e:
+        print(f"Avatar upload error: {e}")
+        raise HTTPException(500, f"Upload failed: {str(e)}")
