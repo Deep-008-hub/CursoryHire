@@ -104,14 +104,27 @@ async def upload_avatar(
         file_path = f"{user['id']}.{ext}"
 
         # Upload to Supabase Storage
+        try:
+            # Try to remove existing file first
+            db.storage.from_("avatars").remove([file_path])
+        except:
+            pass
+
+        # Upload new file
         db.storage.from_("avatars").upload(
-            file_path,
-            contents,
-            {"content-type": avatar.content_type, "upsert": "true"}
+            path=file_path,
+            file=contents,
+            file_options={"content-type": avatar.content_type}
         )
 
         # Get public URL
-        url = db.storage.from_("avatars").get_public_url(file_path)
+        url_response = db.storage.from_("avatars").get_public_url(file_path)
+        
+        # Handle both string and object response
+        if isinstance(url_response, str):
+            url = url_response
+        else:
+            url = url_response.get("publicUrl") or url_response.get("publicURL") or str(url_response)
 
         # Update user avatar_url in database
         db.table("users").update({"avatar_url": url})\
