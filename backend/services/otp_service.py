@@ -49,30 +49,40 @@ async def send_email_otp(to_email: str, otp: str, name: str, purpose: str) -> bo
     print(f"{'='*50}\n")
 
     try:
-        import resend
-        resend.api_key = settings.RESEND_API_KEY
+        import aiosmtplib
+        from email.mime.multipart import MIMEMultipart
+        from email.mime.text import MIMEText
 
-        resend.Emails.send({
-            "from": "CursoryHire <onboarding@resend.dev>",
-            "to": to_email,
-            "subject": f"{otp} is your CursoryHire OTP",
-            "html": f"""
-                <div style="font-family:sans-serif;max-width:500px;margin:40px auto;padding:32px;border-radius:16px;border:1px solid #e2e8f0">
-                    <h2 style="color:#2563eb">CursoryHire</h2>
-                    <p>Hi {name},</p>
-                    <p>Your OTP for {purpose} is:</p>
-                    <div style="background:#f1f5f9;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
-                        <h1 style="font-size:40px;letter-spacing:12px;color:#2563eb;margin:0">{otp}</h1>
-                        <p style="color:#64748b;margin:8px 0 0">Valid for 10 minutes</p>
-                    </div>
-                    <p style="color:#64748b">If you didn't request this, ignore this email.</p>
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = f"{otp} is your CursoryHire OTP"
+        msg["From"]    = f"CursoryHire <{settings.SMTP_USER}>"
+        msg["To"]      = to_email
+        msg.attach(MIMEText(f"""
+            <div style="font-family:sans-serif;max-width:500px;margin:40px auto;padding:32px;border-radius:16px;border:1px solid #e2e8f0">
+                <h2 style="color:#2563eb">CursoryHire</h2>
+                <p>Hi {name},</p>
+                <p>Your OTP is:</p>
+                <div style="background:#f1f5f9;border-radius:12px;padding:24px;text-align:center;margin:24px 0">
+                    <h1 style="font-size:40px;letter-spacing:12px;color:#2563eb;margin:0">{otp}</h1>
+                    <p style="color:#64748b;margin:8px 0 0">Valid for 10 minutes</p>
                 </div>
-            """
-        })
-        print(f"✅ Email sent via Resend to {to_email}")
+                <p style="color:#64748b;font-size:13px">If you didn't request this, ignore this email.</p>
+                <p style="color:#94a3b8;font-size:12px">© 2025 CursoryHire · cursoryhire.com</p>
+            </div>
+        """, "html"))
+
+        await aiosmtplib.send(
+            msg,
+            hostname="smtp.gmail.com",
+            port=465,
+            username=settings.SMTP_USER,
+            password=settings.SMTP_PASSWORD,
+            use_tls=True,
+        )
+        print(f"✅ Email sent to {to_email}")
         return True
     except Exception as e:
-        print(f"⚠️ Resend email failed: {e}")
+        print(f"⚠️ Email failed: {e}")
         return True
 
 async def send_sms_otp(to_phone: str, otp: str) -> bool:
