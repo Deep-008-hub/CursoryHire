@@ -120,9 +120,11 @@ export default function CandInvitations() {
                         <div className="font-semibold text-emerald-800">🎉 Interview confirmed!</div>
                         <div className="text-sm text-emerald-700 mt-0.5">Your video room is ready for the scheduled time</div>
                       </div>
-                      <a href={inv.meet_link} target="_blank" rel="noreferrer" className="btn-primary text-sm py-2 px-4">
-                        <Video className="w-4 h-4" /> Join Room
-                      </a>
+                     <button
+  onClick={() => window.open(inv.meet_link, '_blank')}
+  className="btn-primary text-sm py-2 px-4">
+  <Video className="w-4 h-4" /> Join Interview Room
+</button>
                     </div>
                   )}
                 </div>

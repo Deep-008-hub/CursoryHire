@@ -14,8 +14,8 @@ const NAV = [
 ]
 
 const ROUNDS = [
+  'Technical Round 1',
   'Technical Round 2',
-  'Technical Round 3',
   'HR Round',
   'Manager Round',
   'Final Round',
@@ -333,10 +333,11 @@ export default function HRInvitations() {
 
                   <div className="flex gap-3 mt-3 flex-wrap">
                     {inv.status === 'accepted' && inv.meet_link && (
-                      <a href={inv.meet_link} target="_blank" rel="noreferrer"
+                      <button
+                        onClick={() => window.open(inv.meet_link, '_blank')}
                         className="btn-primary text-sm py-2 px-4">
                         <Video className="w-4 h-4" /> Join Interview Room
-                      </a>
+                      </button>
                     )}
                     {inv.status === 'accepted' && !inv.interview_outcome && (
                       <button onClick={() => setMarking(inv)}
