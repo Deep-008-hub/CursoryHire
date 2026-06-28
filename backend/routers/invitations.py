@@ -196,26 +196,19 @@ async def mark_interview_result(
     }
 
     if invitation.get("candidate_user_id"):
-        # Find the specific application for this job
-        # Match by candidate + job_title since we don't have job_id in invitation
-        candidate_apps = db.table("applications")\
-            .select("id, job_id, status")\
-            .eq("candidate_id", invitation["candidate_user_id"])\
-            .execute()
+        try:
+            candidate_apps = db.table("applications")\
+                .select("id, status")\
+                .eq("candidate_id", invitation["candidate_user_id"])\
+                .execute()
 
-        # Only update application that is actively in interview process
-        for app in (candidate_apps.data or []):
-            if app["status"] in ["interview_scheduled", "screening", "shortlisted"]:
-                db.table("applications").update({"status": status_map[outcome]})\
-                    .eq("id", app["id"]).execute()
-                break  # Only update the first matching one
-    if apps.data:
-        db.table("applications").update({"status": status_map[outcome]})\
-            .eq("id", apps.data[0]["id"]).execute()
-    else:
-        # Fallback — update by candidate only
-        db.table("applications").update({"status": status_map[outcome]})\
-            .eq("candidate_id", invitation["candidate_user_id"]).execute()
+            for app in (candidate_apps.data or []):
+                if app["status"] in ["interview_scheduled", "screening", "shortlisted"]:
+                    db.table("applications").update({"status": status_map[outcome]})\
+                        .eq("id", app["id"]).execute()
+                    break
+        except Exception as e:
+            print(f"Application update error: {e}")
 
         msg_map = {
             "selected": f"Congratulations! You have been selected for {invitation['job_title']}!",
@@ -239,7 +232,6 @@ async def mark_interview_result(
         pass
 
     return {"message": f"Result marked as {outcome}", "outcome": outcome}
-
 
 @router.post("/{invitation_id}/next-round")
 async def schedule_next_round(
