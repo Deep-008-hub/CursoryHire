@@ -55,10 +55,10 @@ export default function App() {
       <Route path="/candidate/applications" element={<PrivateRoute role="candidate"><CandApplications /></PrivateRoute>} />
 
       {/* Video interview */}
-      <Route path="/interview/:roomId" element={<PrivateRoute><VideoRoom /></PrivateRoute>} />
+     {/* Video interview */}
+      <Route path="/interview/:roomId" element={<VideoRoom />} /> 
 
       <Route path="*" element={<Navigate to="/" replace />} />
-      <Route path="/interview/:roomId" element={<VideoRoom />} />
     </Routes>
   )
 }
