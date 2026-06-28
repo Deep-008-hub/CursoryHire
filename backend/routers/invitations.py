@@ -5,6 +5,7 @@ from services.notification_service import create_notification
 from database import get_db
 from datetime import datetime, timezone
 import uuid
+from config import settings
 
 router = APIRouter(prefix="/invitations", tags=["invitations"])
 
