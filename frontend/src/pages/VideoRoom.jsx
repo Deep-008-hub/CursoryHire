@@ -237,10 +237,17 @@ export default function VideoRoom() {
   }
 
   const hangUp = () => {
+    streamRef.current?.getTracks().forEach(t => t.stop())
     pcRef.current?.close()
     wsRef.current?.close()
-    streamRef.current?.getTracks().forEach(t => t.stop())
-    navigate(-1)
+    pcRef.current  = null
+    wsRef.current  = null
+    streamRef.current = null
+    if (localRef.current)  localRef.current.srcObject  = null
+    if (remoteRef.current) remoteRef.current.srcObject = null
+    window.close()
+    // fallback if window.close() is blocked
+    navigate('/')
   }
 
   const copyLink = () => {

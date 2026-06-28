@@ -1,17 +1,17 @@
 import { useQuery } from '@tanstack/react-query'
-import { LayoutDashboard, Briefcase, Bell, User, FileText, MapPin, Loader2, Clock } from 'lucide-react'
+import { LayoutDashboard, Briefcase, Bell, User, FileText, MapPin, Loader2, Clock, CheckCircle, XCircle } from 'lucide-react'
 import PortalLayout from '../../components/PortalLayout'
 import { CAND_NAV } from './CandDashboard'
 import api from '../../utils/api'
 
 const STATUS_CONFIG = {
-  applied:              { label: 'Applied',              badge: 'badge-blue',   step: 0 },
-  screening:            { label: 'AI Screening',         badge: 'badge-purple', step: 1 },
-  shortlisted:          { label: 'Shortlisted ⭐',       badge: 'badge-green',  step: 2 },
-  interview_scheduled:  { label: 'Interview Scheduled',  badge: 'badge-amber',  step: 3 },
-  offered:              { label: 'Offer Received 🎉',    badge: 'badge-green',  step: 4 },
-  rejected:             { label: 'Not Selected',         badge: 'badge-red',    step: -1 },
-  withdrawn:            { label: 'Withdrawn',            badge: 'badge-gray',   step: -1 },
+  applied:             { label: 'Applied',             badge: 'badge-blue',   step: 0 },
+  screening:           { label: 'AI Screening',        badge: 'badge-purple', step: 1 },
+  shortlisted:         { label: 'Shortlisted ⭐',      badge: 'badge-green',  step: 2 },
+  interview_scheduled: { label: 'Interview Scheduled', badge: 'badge-amber',  step: 3 },
+  offered:             { label: 'Offer Received 🎉',   badge: 'badge-green',  step: 5 },
+  rejected:            { label: 'Not Selected',        badge: 'badge-red',    step: -1 },
+  withdrawn:           { label: 'Withdrawn',           badge: 'badge-gray',   step: -1 },
 }
 
 const STEPS = ['Applied', 'Screening', 'Shortlisted', 'Interview', 'Offer']
@@ -45,9 +45,15 @@ export default function CandApplications() {
             const job    = app.jobs || {}
             const config = STATUS_CONFIG[app.status] || STATUS_CONFIG.applied
             const step   = config.step
+            const isOffered  = app.status === 'offered'
+            const isRejected = app.status === 'rejected'
 
             return (
-              <div key={app.id} className="card hover:shadow-card-hover transition-all">
+              <div key={app.id} className={`card hover:shadow-card-hover transition-all border-l-4 ${
+                isOffered  ? 'border-l-emerald-500' :
+                isRejected ? 'border-l-red-400' :
+                'border-l-blue-400'
+              }`}>
                 <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
                   <div>
                     <h3 className="font-display font-bold text-xl text-slate-900">{job.title || 'Job Title'}</h3>
@@ -63,8 +69,34 @@ export default function CandApplications() {
                   <span className={config.badge}>{config.label}</span>
                 </div>
 
-                {/* Progress timeline */}
-                {step >= 0 && (
+                {/* Offered — full green celebration */}
+                {isOffered && (
+                  <div className="flex items-center gap-4 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl mb-4">
+                    <CheckCircle className="w-10 h-10 text-emerald-500 flex-shrink-0" />
+                    <div>
+                      <div className="font-display font-bold text-emerald-800 text-lg">🎉 Congratulations!</div>
+                      <div className="text-emerald-600 text-sm mt-0.5">
+                        You have been selected for <strong>{job.title}</strong>. HR will be in touch shortly.
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Rejected — red message */}
+                {isRejected && (
+                  <div className="flex items-center gap-4 p-4 bg-red-50 border border-red-200 rounded-2xl mb-4">
+                    <XCircle className="w-10 h-10 text-red-400 flex-shrink-0" />
+                    <div>
+                      <div className="font-display font-bold text-red-700 text-lg">Application Unsuccessful</div>
+                      <div className="text-red-500 text-sm mt-0.5">
+                        Thank you for applying for <strong>{job.title}</strong>. The position has been filled. Keep applying!
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Progress timeline — only for active applications */}
+                {!isRejected && step >= 0 && step < 5 && (
                   <div className="flex items-center mb-5">
                     {STEPS.map((s, i) => {
                       const done   = i < step
@@ -89,6 +121,26 @@ export default function CandApplications() {
                               done ? 'bg-emerald-500' : 'bg-slate-100'
                             }`} />
                           )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                )}
+
+                {/* Full green timeline for offered */}
+                {isOffered && (
+                  <div className="flex items-center mb-5">
+                    {STEPS.map((s, i) => {
+                      const last = i === STEPS.length - 1
+                      return (
+                        <div key={s} className="flex items-center flex-1 last:flex-none">
+                          <div className="flex flex-col items-center">
+                            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold border-2 bg-emerald-500 border-emerald-500 text-white">
+                              ✓
+                            </div>
+                            <div className="text-xs mt-1 font-medium whitespace-nowrap text-slate-700">{s}</div>
+                          </div>
+                          {!last && <div className="flex-1 h-0.5 mx-1 mb-4 rounded-full bg-emerald-500" />}
                         </div>
                       )
                     })}
