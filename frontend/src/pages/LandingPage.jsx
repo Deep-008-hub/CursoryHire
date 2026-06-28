@@ -61,7 +61,7 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 text-sm font-medium text-blue-700 mb-6">
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                Powered by Google Gemini AI
+                TRANSFORM HIRING PROCESS
               </div>
               <h1 className="font-display text-5xl font-bold text-slate-900 leading-tight mb-6">
                 Hire Smarter with{' '}

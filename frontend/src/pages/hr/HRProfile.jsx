@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { LayoutDashboard, Search, Briefcase, Send, User, Save, Loader2 } from 'lucide-react'
+import { LayoutDashboard, Search, Briefcase, Send, User, Save, Loader2, Camera } from 'lucide-react'
 import PortalLayout from '../../components/PortalLayout'
 import api from '../../utils/api'
 import toast from 'react-hot-toast'
@@ -15,10 +15,16 @@ const NAV = [
 ]
 
 export default function HRProfile() {
-  const { user } = useAuthStore()
+  const { user, setAuth, token } = useAuthStore()
   const qc = useQueryClient()
-  const [form, setForm] = useState({ company_name:'', designation:'', industry:'', company_size:'', website:'', linkedin:'', bio:'' })
-  const [loading, setLoading] = useState(false)
+  const fileRef = useRef()
+  const [loading,       setLoading]       = useState(false)
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const [avatarUrl,     setAvatarUrl]     = useState(null)
+  const [form, setForm] = useState({
+    company_name: '', designation: '', industry: '',
+    company_size: '', website: '', linkedin: '', bio: ''
+  })
   const set = (k, v) => setForm(p => ({ ...p, [k]: v }))
 
   const { data: meData } = useQuery({
@@ -28,7 +34,27 @@ export default function HRProfile() {
 
   useEffect(() => {
     if (meData?.profile) setForm({ ...form, ...meData.profile })
+    if (meData?.user?.avatar_url) setAvatarUrl(meData.user.avatar_url)
   }, [meData])
+
+  const handleAvatarChange = async (file) => {
+    if (!file) return
+    if (file.size > 2 * 1024 * 1024) return toast.error('Image must be under 2MB')
+
+    try {
+      setAvatarLoading(true)
+      const fd = new FormData()
+      fd.append('avatar', file)
+      const res = await api.post('/users/upload-avatar', fd)
+      setAvatarUrl(res.data.avatar_url)
+      toast.success('Profile picture updated!')
+      qc.invalidateQueries(['me'])
+    } catch (e) {
+      toast.error('Failed to upload image')
+    } finally {
+      setAvatarLoading(false)
+    }
+  }
 
   const save = async () => {
     try {
@@ -36,9 +62,12 @@ export default function HRProfile() {
       await api.patch('/users/hr/profile', form)
       toast.success('Profile saved!')
       qc.invalidateQueries(['me'])
-    } catch (e) { toast.error('Save failed') }
-    finally { setLoading(false) }
+    } catch (e) {
+      toast.error('Save failed')
+    } finally { setLoading(false) }
   }
+
+  const initials = user?.full_name?.[0]?.toUpperCase() || 'H'
 
   return (
     <PortalLayout navItems={NAV} role="hr">
@@ -50,12 +79,48 @@ export default function HRProfile() {
 
         {/* Avatar card */}
         <div className="card mb-6 flex items-center gap-5">
-          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white font-display font-bold text-2xl">
-            {user?.full_name?.[0]}
+          <div className="relative flex-shrink-0">
+            {avatarUrl ? (
+              <img
+                src={avatarUrl}
+                alt="Profile"
+                className="w-20 h-20 rounded-2xl object-cover border-2 border-slate-200"
+              />
+            ) : (
+              <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-blue-600 to-violet-600 flex items-center justify-center text-white font-display font-bold text-3xl">
+                {initials}
+              </div>
+            )}
+            {/* Camera overlay */}
+            <button
+              onClick={() => fileRef.current?.click()}
+              disabled={avatarLoading}
+              className="absolute -bottom-2 -right-2 w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white shadow-lg hover:bg-blue-700 transition-colors"
+            >
+              {avatarLoading
+                ? <Loader2 className="w-4 h-4 animate-spin" />
+                : <Camera className="w-4 h-4" />
+              }
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              className="hidden"
+              onChange={e => handleAvatarChange(e.target.files[0])}
+            />
           </div>
           <div>
             <div className="font-display font-bold text-xl text-slate-900">{user?.full_name}</div>
-            <div className="text-slate-500 text-sm">{form.designation || 'HR Professional'} {form.company_name ? `· ${form.company_name}` : ''}</div>
+            <div className="text-slate-500 text-sm">
+              {form.designation || 'HR Professional'} {form.company_name ? `· ${form.company_name}` : ''}
+            </div>
+            <button
+              onClick={() => fileRef.current?.click()}
+              className="text-xs text-blue-600 hover:underline mt-1"
+            >
+              Change profile picture
+            </button>
           </div>
         </div>
 
