@@ -68,13 +68,11 @@ class CandidateProfileUpdate(BaseModel):
     skills: Optional[List[str]] = None
     experience_years: Optional[int] = None
     current_company: Optional[str] = None
-    current_position: Optional[str] = None
+    current_role: Optional[str] = None
     location: Optional[str] = None
     linkedin: Optional[str] = None
     github: Optional[str] = None
     portfolio: Optional[str] = None
-    resume_text: Optional[str] = None
-    resume_url: Optional[str] = None
 
 # ── Jobs ─────────────────────────────────────────────────────
 class JobCreate(BaseModel):
@@ -92,6 +90,7 @@ class JobCreate(BaseModel):
     salary_min: Optional[int] = None
     salary_max: Optional[int] = None
     salary_currency: str = "INR"
+    application_deadline: Optional[datetime] = None
 
 class JobOut(JobCreate):
     id: str

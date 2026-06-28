@@ -1,9 +1,9 @@
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException
 from utils.auth import get_current_user, get_current_hr
 from models.schemas import JobCreate
 from database import get_db
 from typing import Optional
-import tempfile, os
+from datetime import datetime, timezone
 
 router = APIRouter(prefix="/jobs", tags=["jobs"])
 
@@ -26,7 +26,18 @@ async def list_jobs(status: Optional[str] = None, user=Depends(get_current_user)
     else:
         q = db.table("jobs").select("*").eq("status", "active")
     res = q.order("created_at", desc=True).execute()
-    return res.data or []
+    jobs = res.data or []
+
+    # Mark jobs past deadline as closed
+    now = datetime.now(timezone.utc).isoformat()
+    for job in jobs:
+        if job.get("application_deadline") and job["application_deadline"] < now:
+            if job["status"] == "active":
+                db.table("jobs").update({"status": "closed"})\
+                    .eq("id", job["id"]).execute()
+                job["status"] = "closed"
+
+    return jobs
 
 @router.get("/candidate/applications")
 async def my_applications(user=Depends(get_current_user)):
@@ -74,27 +85,42 @@ async def apply_job(job_id: str, user=Depends(get_current_user)):
     job = db.table("jobs").select("*").eq("id", job_id).execute()
     if not job.data:
         raise HTTPException(404, "Job not found")
-    if job.data[0]["status"] != "active":
-        raise HTTPException(400, "Job is no longer active")
+
+    job_data = job.data[0]
+    if job_data["status"] != "active":
+        raise HTTPException(400, "This job is no longer accepting applications")
+
+    # Check deadline
+    if job_data.get("application_deadline"):
+        deadline = job_data["application_deadline"]
+        now = datetime.now(timezone.utc).isoformat()
+        if deadline < now:
+            raise HTTPException(400, "Application deadline has passed")
+
     existing = db.table("applications").select("id")\
         .eq("job_id", job_id).eq("candidate_id", user["id"]).execute()
     if existing.data:
         raise HTTPException(400, "You have already applied for this job")
+
+    # Get resume from profile
     profile = db.table("candidate_profiles").select("resume_text, resume_url")\
         .eq("user_id", user["id"]).execute()
     resume_text = ""
-    resume_url = ""
+    resume_url  = ""
     if profile.data:
         resume_text = profile.data[0].get("resume_text") or ""
         resume_url  = profile.data[0].get("resume_url") or ""
+
     if not resume_text:
         raise HTTPException(400, "Please upload your resume in your profile before applying")
+
     res = db.table("applications").insert({
         "job_id":       job_id,
         "candidate_id": user["id"],
-        "hr_user_id":   job.data[0]["hr_user_id"],
+        "hr_user_id":   job_data["hr_user_id"],
         "status":       "applied",
         "resume_url":   resume_url,
+        "screened":     False,
     }).execute()
     return res.data[0]
 
@@ -105,12 +131,23 @@ async def get_applicants(job_id: str, user=Depends(get_current_hr)):
         .eq("hr_user_id", user["id"]).execute()
     if not job.data:
         raise HTTPException(404, "Job not found")
-    apps = db.table("applications").select("*, users!applications_candidate_id_fkey(id, full_name, email, phone)")\
-    .eq("job_id", job_id).order("applied_at", desc=True).execute()
+
+    apps = db.table("applications")\
+        .select("*, users!applications_candidate_id_fkey(id, full_name, email, phone)")\
+        .eq("job_id", job_id)\
+        .order("applied_at", desc=True).execute()
+
     result = []
     for app in (apps.data or []):
         profile = db.table("candidate_profiles").select("*")\
             .eq("user_id", app["candidate_id"]).execute()
         app["profile"] = profile.data[0] if profile.data else {}
         result.append(app)
-    return {"job": job.data[0], "applicants": result, "total": len(result)}
+
+    return {
+        "job":        job.data[0],
+        "applicants": result,
+        "total":      len(result),
+        "screened":   len([a for a in result if a.get("screened")]),
+        "unscreened": len([a for a in result if not a.get("screened")]),
+    }

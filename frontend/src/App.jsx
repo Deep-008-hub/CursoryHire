@@ -10,6 +10,7 @@ import HRResults       from './pages/hr/HRResults'
 import HRJobs          from './pages/hr/HRJobs'
 import HRInvitations   from './pages/hr/HRInvitations'
 import HRProfile       from './pages/hr/HRProfile'
+import HRFinalRanking  from './pages/hr/HRFinalRanking'
 import CandDashboard   from './pages/candidate/CandDashboard'
 import CandInvitations from './pages/candidate/CandInvitations'
 import CandJobs        from './pages/candidate/CandJobs'
@@ -44,6 +45,7 @@ export default function App() {
       <Route path="/hr/jobs"        element={<PrivateRoute role="hr"><HRJobs /></PrivateRoute>} />
       <Route path="/hr/invitations" element={<PrivateRoute role="hr"><HRInvitations /></PrivateRoute>} />
       <Route path="/hr/profile"     element={<PrivateRoute role="hr"><HRProfile /></PrivateRoute>} />
+      <Route path="/hr/final-ranking/:jobId" element={<PrivateRoute role="hr"><HRFinalRanking /></PrivateRoute>} />
 
       {/* Candidate routes */}
       <Route path="/candidate/dashboard"    element={<PrivateRoute role="candidate"><CandDashboard /></PrivateRoute>} />

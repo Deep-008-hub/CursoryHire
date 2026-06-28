@@ -69,7 +69,10 @@ async def extract_resume(
     resume: UploadFile = File(...),
     user=Depends(get_current_user)
 ):
-    from services.parser_service import save_upload_temp, parse_resume_file
+    """Extract text from uploaded resume PDF/TXT."""
+    from services.parser_service import save_upload_temp, parse_resume_file, validate_resume_text
+    import os
+
     tmp_path = None
     try:
         tmp_path, filename = await save_upload_temp(resume)
@@ -84,16 +87,21 @@ async def extract_resume(
         if tmp_path and os.path.exists(tmp_path):
             try: os.remove(tmp_path)
             except: pass
-            
+
 @router.post("/upload-avatar")
 async def upload_avatar(
     avatar: UploadFile = File(...),
     user=Depends(get_current_user)
 ):
     """Upload profile picture to Supabase Storage."""
-    if avatar.content_type not in ["image/jpeg", "image/png", "image/webp", "image/gif"]:
-        raise HTTPException(400, "Only JPEG, PNG or WebP images allowed")
+    import base64
+    from database import get_db
 
+    # Validate file type
+    if avatar.content_type not in ["image/jpeg", "image/png", "image/webp", "image/gif"]:
+        raise HTTPException(400, "Only JPEG, PNG, WebP or GIF images allowed")
+
+    # Validate file size (max 2MB)
     contents = await avatar.read()
     if len(contents) > 2 * 1024 * 1024:
         raise HTTPException(400, "Image must be under 2MB")
@@ -101,32 +109,19 @@ async def upload_avatar(
     try:
         db = get_db()
         ext = avatar.filename.split('.')[-1].lower()
-        file_path = f"{user['id']}.{ext}"
+        file_path = f"avatars/{user['id']}.{ext}"
 
         # Upload to Supabase Storage
-        try:
-            # Try to remove existing file first
-            db.storage.from_("avatars").remove([file_path])
-        except:
-            pass
-
-        # Upload new file
-        db.storage.from_("avatars").upload(
-            path=file_path,
-            file=contents,
-            file_options={"content-type": avatar.content_type}
+        res = db.storage.from_("avatars").upload(
+            file_path,
+            contents,
+            {"content-type": avatar.content_type, "upsert": "true"}
         )
 
         # Get public URL
-        url_response = db.storage.from_("avatars").get_public_url(file_path)
-        
-        # Handle both string and object response
-        if isinstance(url_response, str):
-            url = url_response
-        else:
-            url = url_response.get("publicUrl") or url_response.get("publicURL") or str(url_response)
+        url = db.storage.from_("avatars").get_public_url(file_path)
 
-        # Update user avatar_url in database
+        # Update user avatar_url
         db.table("users").update({"avatar_url": url})\
             .eq("id", user["id"]).execute()
 
@@ -134,4 +129,88 @@ async def upload_avatar(
 
     except Exception as e:
         print(f"Avatar upload error: {e}")
+        raise HTTPException(500, f"Upload failed: {str(e)}")
+
+
+@router.post("/upload-resume-pdf")
+async def upload_resume_pdf(
+    resume: UploadFile = File(...),
+    user=Depends(get_current_user)
+):
+    """Upload resume PDF to Supabase Storage and save URL."""
+    if user["role"] != "candidate":
+        raise HTTPException(403, "Candidates only")
+
+    # Validate file type
+    ext = resume.filename.split('.')[-1].lower()
+    if ext not in ['pdf', 'docx', 'doc', 'txt']:
+        raise HTTPException(400, "Only PDF, DOCX or TXT files allowed")
+
+    contents = await resume.read()
+    if len(contents) > 5 * 1024 * 1024:
+        raise HTTPException(400, "File must be under 5MB")
+
+    try:
+        db = get_db()
+        file_path = f"resumes/{user['id']}.{ext}"
+
+        # Remove existing file
+        try:
+            db.storage.from_("resumes").remove([file_path])
+        except:
+            pass
+
+        # Upload to Supabase Storage
+        db.storage.from_("resumes").upload(
+            path=file_path,
+            file=contents,
+            file_options={"content-type": resume.content_type or "application/pdf"}
+        )
+
+        # Get public URL
+        url = db.storage.from_("resumes").get_public_url(file_path)
+        if not isinstance(url, str):
+            url = url.get("publicUrl") or str(url)
+
+        # Also extract text for AI screening
+        from services.parser_service import parse_resume_file
+        import tempfile, os
+        tmp_path = None
+        resume_text = ""
+        try:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=f".{ext}") as tmp:
+                tmp.write(contents)
+                tmp_path = tmp.name
+            parsed = parse_resume_file(tmp_path, resume.filename)
+            resume_text = parsed.get("text", "")
+        except Exception as e:
+            print(f"Text extraction error: {e}")
+        finally:
+            if tmp_path and os.path.exists(tmp_path):
+                try: os.remove(tmp_path)
+                except: pass
+
+        # Update candidate profile with both URL and text
+        existing = db.table("candidate_profiles").select("id")\
+            .eq("user_id", user["id"]).execute()
+        update_data = {"resume_url": url}
+        if resume_text:
+            update_data["resume_text"] = resume_text
+
+        if existing.data:
+            db.table("candidate_profiles").update(update_data)\
+                .eq("user_id", user["id"]).execute()
+        else:
+            update_data["user_id"] = user["id"]
+            db.table("candidate_profiles").insert(update_data).execute()
+
+        return {
+            "resume_url":  url,
+            "resume_text": resume_text,
+            "words":       len(resume_text.split()) if resume_text else 0,
+            "message":     "Resume uploaded successfully"
+        }
+
+    except Exception as e:
+        print(f"Resume upload error: {e}")
         raise HTTPException(500, f"Upload failed: {str(e)}")
