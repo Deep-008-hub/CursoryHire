@@ -24,7 +24,7 @@ async def send_invitation(data: InvitationCreate, user=Depends(get_current_hr)):
             raise HTTPException(400, "Invitation already sent for this candidate")
 
     room_id   = f"ch-{uuid.uuid4().hex[:12]}"
-    base_url = settings.FRONTEND_URL or "http://localhost:5173"
+    base_url = settings.FRONTEND_URL.rstrip('/') if settings.FRONTEND_URL else "https://cursory-hire.vercel.app"
     meet_link = f"{base_url}/interview/{room_id}"
 
     invite_data = {
