@@ -131,10 +131,11 @@ class ScreeningSessionOut(BaseModel):
 
 # ── Invitations ───────────────────────────────────────────────
 class InvitationCreate(BaseModel):
-    screening_result_id: str
+    screening_result_id: Optional[str] = None
     candidate_email: str
     candidate_name: str
     job_title: str
+    job_id: Optional[str] = None
     message: Optional[str] = None
     interview_date: Optional[datetime] = None
     interview_type: str = "video"

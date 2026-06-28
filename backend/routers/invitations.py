@@ -39,6 +39,7 @@ async def send_invitation(data: InvitationCreate, user=Depends(get_current_hr)):
         "meet_link":       meet_link,
         "room_id":         room_id,
         "round_name":      "Round 1",
+        "job_id": data.job_id if hasattr(data, 'job_id') else None,
     }
     if data.screening_result_id:
         invite_data["screening_result_id"] = data.screening_result_id
@@ -195,6 +196,18 @@ async def mark_interview_result(
     }
 
     if invitation.get("candidate_user_id"):
+    # Get the job_id from the job_title match or screening result
+    # Update only the specific application
+         apps = db.table("applications").select("id")\
+        .eq("candidate_id", invitation["candidate_user_id"])\
+        .eq("job_id", invitation.get("job_id") or "")\
+        .execute()
+    
+    if apps.data:
+        db.table("applications").update({"status": status_map[outcome]})\
+            .eq("id", apps.data[0]["id"]).execute()
+    else:
+        # Fallback — update by candidate only
         db.table("applications").update({"status": status_map[outcome]})\
             .eq("candidate_id", invitation["candidate_user_id"]).execute()
 

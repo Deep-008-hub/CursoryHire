@@ -38,6 +38,7 @@ function InviteModal({ result, jobTitle, onClose, onSent }) {
         candidate_email:     email,
         candidate_name:      name,
         job_title:           jobTitle,
+        job_id:              jobId,   // add this
         message,
         interview_date:      date || undefined,
         interview_type:      type,
