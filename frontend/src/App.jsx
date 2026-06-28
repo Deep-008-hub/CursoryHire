@@ -58,6 +58,7 @@ export default function App() {
       <Route path="/interview/:roomId" element={<PrivateRoute><VideoRoom /></PrivateRoute>} />
 
       <Route path="*" element={<Navigate to="/" replace />} />
+      <Route path="/interview/:roomId" element={<VideoRoom />} />
     </Routes>
   )
 }
