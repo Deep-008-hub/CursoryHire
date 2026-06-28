@@ -196,12 +196,11 @@ async def mark_interview_result(
     }
 
     if invitation.get("candidate_user_id"):
-    # Get the job_id from the job_title match or screening result
-    # Update only the specific application
-         apps = db.table("applications").select("id")\
-        .eq("candidate_id", invitation["candidate_user_id"])\
-        .eq("job_id", invitation.get("job_id") or "")\
-        .execute()
+        # Update only applications that are in interview stage for this candidate
+        db.table("applications").update({"status": status_map[outcome]})\
+            .eq("candidate_id", invitation["candidate_user_id"])\
+            .in_("status", ["interview_scheduled", "screening", "shortlisted"])\
+            .execute()
     
     if apps.data:
         db.table("applications").update({"status": status_map[outcome]})\
