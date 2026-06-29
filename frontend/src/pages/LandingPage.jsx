@@ -28,7 +28,7 @@ export default function LandingPage() {
       <nav className="sticky top-0 z-50 bg-white/80 backdrop-blur-lg border-b border-slate-100">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+            <div className="w-8 h-8 bg-gradient-to-br from-blue-600 to-violet-700 rounded-lg flex items-center justify-center">
               <Zap className="w-4 h-4 text-white" />
             </div>
             <span className="font-display text-xl font-bold text-slate-900">CursoryHire</span>
@@ -61,7 +61,7 @@ export default function LandingPage() {
             >
               <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-200 rounded-full px-4 py-1.5 text-sm font-medium text-blue-700 mb-6">
                 <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse" />
-                TRANSFORM HIRING PROCESS
+                TRANSFORMING THE HIRING PROCESS
               </div>
               <h1 className="font-display text-5xl font-bold text-slate-900 leading-tight mb-6">
                 Hire Smarter with{' '}
@@ -134,9 +134,7 @@ export default function LandingPage() {
                     <span className="badge-blue text-xs">{c.grade}</span>
                   </div>
                 ))}
-                <button className="w-full mt-4 btn-primary text-sm py-2.5 justify-center">
-                  Send Invitations
-                </button>
+                
               </div>
               {/* Floating badge */}
               <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-card border border-slate-100 px-4 py-2.5 flex items-center gap-2">
@@ -219,7 +217,7 @@ export default function LandingPage() {
       <footer className="bg-slate-900 border-t border-slate-800 py-8">
         <div className="max-w-6xl mx-auto px-6 flex flex-col md:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2 text-white">
-            <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-violet-600 rounded-lg flex items-center justify-center">
+            <div className="w-6 h-6 bg-gradient-to-br from-blue-600 to-violet-700 rounded-lg flex items-center justify-center">
               <Zap className="w-3 h-3 text-white" />
             </div>
             <span className="font-display font-bold">CursoryHire</span>
