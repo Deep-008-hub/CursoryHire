@@ -65,7 +65,7 @@ export default function LandingPage() {
               </div>
               <h1 className="font-display text-5xl font-bold text-slate-900 leading-tight mb-6">
                 Hire Smarter with{' '}
-                <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
+                <span className="bg-gradient-to-r from-green-600 to-green-900 bg-clip-text text-transparent">
                   CURSORY HIRE
                 </span>
               </h1>
@@ -112,7 +112,7 @@ export default function LandingPage() {
                     <div className="text-xs text-slate-400 font-medium mb-1">SCREENING SESSION</div>
                     <div className="font-display font-bold text-slate-900">Senior React Developer</div>
                   </div>
-                  <span className="badge-green">✓ Complete</span>
+                  <span className="badge-green">✓ Completed</span>
                 </div>
                 {/* Ranked candidates */}
                 {[
@@ -152,7 +152,7 @@ export default function LandingPage() {
       </section>
 
       {/* ── STATS ── */}
-      <section className="bg-gradient-to-r from-blue-600 to-violet-600 py-14">
+      <section className="bg-gradient-to-r from-green-600 to-green-900 py-14">
         <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 md:grid-cols-4 gap-8">
           {STATS.map(s => (
             <div key={s.label} className="text-center text-white">
@@ -185,7 +185,7 @@ export default function LandingPage() {
                 className="card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300"
               >
                 <div className="w-12 h-12 bg-gradient-to-br from-blue-50 to-violet-50 rounded-2xl flex items-center justify-center mb-4 border border-blue-100">
-                  <f.icon className="w-6 h-6 text-blue-600" />
+                  <f.icon className="w-6 h-6 text-green-600" />
                 </div>
                 <h3 className="font-display text-lg font-bold text-slate-900 mb-2">{f.title}</h3>
                 <p className="text-slate-500 text-sm leading-relaxed">{f.desc}</p>
@@ -225,10 +225,10 @@ export default function LandingPage() {
             <span className="font-display font-bold">CursoryHire</span>
           </div>
           <p className="text-slate-500 text-sm">
-            © 2026 CursoryHire · cursoryhire.com · NITK Major Project
+            © 2026 CursoryHire · cursoryhire.com · MCA Major Project
           </p>
           <p className="text-slate-400 text-sm font-medium">
-            Made with ❤️ by <span className="text-blue-400 font-semibold">Deep Saha</span>
+            Made with ❤️ at NITK by <span className="text-green-600 font-semibold">Deep Saha</span>
           </p>
         </div>
       </footer>
