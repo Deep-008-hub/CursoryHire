@@ -115,17 +115,21 @@ async def register(req: RegisterRequest):
 async def verify_otp(data: VerifyOTPRequest):
     db = get_db()
 
-    # Verify OTP
+    # Get unused OTP for this identifier
     otp_record = db.table("otp_codes").select("*")\
         .eq("identifier", data.identifier)\
-        .eq("purpose", data.purpose)\
-        .eq("used", False)\
+        .eq("purpose",    data.purpose)\
+        .eq("used",       False)\
         .execute()
 
     if not otp_record.data:
         raise HTTPException(400, "Invalid or expired OTP")
 
     otp = otp_record.data[0]
+
+    # Check if OTP code matches
+    if otp["code"] != data.code:
+        raise HTTPException(400, "Incorrect OTP. Please try again.")
 
     # Check expiry
     if datetime.fromisoformat(otp["expires_at"]) < datetime.now(timezone.utc):
@@ -162,7 +166,7 @@ async def verify_otp(data: VerifyOTPRequest):
     token = create_token(user_data["id"], user_data["role"])
 
     return {
-        "token":    token,
-        "user":     user_data,
-        "role":     user_data["role"],
+        "token": token,
+        "user":  user_data,
+        "role":  user_data["role"],
     }
