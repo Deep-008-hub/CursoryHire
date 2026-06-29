@@ -100,8 +100,7 @@ export default function AuthPage() {
       const res = await api.post('/auth/verify-otp', {
         identifier,
         code,
-        purpose: mode === 'register' ? 'register' : 'login',
-        expected_role: role,  
+        purpose: mode === 'register' ? 'register' : 'login', 
       })
       const { access_token, user_id, role: userRole, full_name } = res.data
       setAuth(access_token, { id: user_id, role: userRole, full_name })

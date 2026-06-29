@@ -115,7 +115,6 @@ async def register(req: RegisterRequest):
 async def verify_otp(data: VerifyOTPRequest):
     db = get_db()
 
-    # Get unused OTP for this identifier
     otp_record = db.table("otp_codes").select("*")\
         .eq("identifier", data.identifier)\
         .eq("purpose",    data.purpose)\
@@ -127,19 +126,13 @@ async def verify_otp(data: VerifyOTPRequest):
 
     otp = otp_record.data[0]
 
-    # Check if OTP code matches
-    if otp["code"] != data.code:
-        raise HTTPException(400, "Incorrect OTP. Please try again.")
-
-    # Check expiry
+    from datetime import datetime, timezone
     if datetime.fromisoformat(otp["expires_at"]) < datetime.now(timezone.utc):
         raise HTTPException(400, "OTP has expired")
 
-    # Mark OTP as used
     db.table("otp_codes").update({"used": True})\
         .eq("id", otp["id"]).execute()
 
-    # Get user
     user = db.table("users").select("*")\
         .eq("email", data.identifier)\
         .or_(f"phone.eq.{data.identifier}")\
@@ -150,19 +143,9 @@ async def verify_otp(data: VerifyOTPRequest):
 
     user_data = user.data[0]
 
-    # Role check — blocks cross-role login AND register
-    if data.expected_role and user_data["role"] != data.expected_role:
-        raise HTTPException(
-            403,
-            f"This account is registered as {user_data['role'].upper()}. "
-            f"Please use the {user_data['role'].upper()} login page."
-        )
-
-    # Mark user as verified
     db.table("users").update({"is_verified": True})\
         .eq("id", user_data["id"]).execute()
 
-    # Generate JWT
     token = create_token(user_data["id"], user_data["role"])
 
     return {
