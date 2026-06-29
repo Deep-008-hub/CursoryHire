@@ -66,7 +66,7 @@ export default function LandingPage() {
               <h1 className="font-display text-5xl font-bold text-slate-900 leading-tight mb-6">
                 Hire Smarter with{' '}
                 <span className="bg-gradient-to-r from-blue-600 to-violet-600 bg-clip-text text-transparent">
-                  AI Screening
+                  CURSORY HIRE
                 </span>
               </h1>
               <p className="text-lg text-slate-600 leading-relaxed mb-8">
@@ -116,11 +116,11 @@ export default function LandingPage() {
                 </div>
                 {/* Ranked candidates */}
                 {[
-                  { rank:1, name:'Rahul Sharma', score:92, grade:'A+', color:'rank-1' },
-                  { rank:2, name:'Priya Singh',  score:87, grade:'A',  color:'rank-2' },
-                  { rank:3, name:'Deep Saha',    score:81, grade:'B+', color:'rank-3' },
-                  { rank:4, name:'Anita Roy',    score:74, grade:'B',  color:'' },
-                  { rank:5, name:'Vikram Joshi', score:68, grade:'C+', color:'' },
+                  { rank:1, name:'Debangshu Mukherjee', score:92, grade:'A+', color:'rank-1' },
+                  { rank:2, name:'Rohan Roy',  score:87, grade:'A',  color:'rank-2' },
+                  { rank:3, name:'Samiran Das',    score:81, grade:'B+', color:'rank-3' },
+                  { rank:4, name:'Peka tlau',    score:74, grade:'B',  color:'' },
+                  { rank:5, name:'Deep Saha', score:68, grade:'C+', color:'' },
                 ].map(c => (
                   <div key={c.rank} className="flex items-center gap-3 py-2.5 border-b border-slate-50 last:border-0">
                     <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${c.color || 'bg-slate-100 text-slate-500'}`}>
@@ -140,10 +140,10 @@ export default function LandingPage() {
               </div>
               {/* Floating badge */}
               <div className="absolute -top-4 -right-4 bg-white rounded-2xl shadow-card border border-slate-100 px-4 py-2.5 flex items-center gap-2">
-                <span className="text-lg">🤖</span>
+                <span className="text-lg"></span>
                 <div>
                   <div className="text-xs font-bold text-slate-900">AI Screened</div>
-                  <div className="text-xs text-slate-500">5 resumes in 12s</div>
+                  <div className="text-xs text-slate-500"></div>
                 </div>
               </div>
             </motion.div>
@@ -202,7 +202,7 @@ export default function LandingPage() {
             Ready to transform your hiring?
           </h2>
           <p className="text-slate-400 text-lg mb-10">
-            Join CursoryHire today. No credit card required.
+            Sign up today for free
           </p>
           <div className="flex flex-wrap justify-center gap-4">
             <button onClick={() => navigate('/auth/hr')} className="btn-primary text-base px-8 py-3.5">
