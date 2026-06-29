@@ -65,21 +65,26 @@ async def register(req: RegisterRequest):
                 existing_user = res.data[0]
 
         if existing_user:
+            # Check if role matches
+            if existing_user["role"] != req.role:
+                raise HTTPException(
+                    400,
+                    f"This account is already registered as {existing_user['role'].upper()}. "
+                    f"Please use the {existing_user['role'].upper()} login page instead."
+                )
             return {
                 "message": "Account found. OTP will be sent.",
                 "user_id": existing_user["id"]
             }
 
         user_data = {
-            "full_name": req.full_name,
-            "role": req.role,
-            "is_verified": False,
-            "is_active": True,
+            "full_name":    req.full_name,
+            "role":         req.role,
+            "is_verified":  False,
+            "is_active":    True,
         }
-        if req.email:
-            user_data["email"] = req.email
-        if req.phone:
-            user_data["phone"] = req.phone
+        if req.email: user_data["email"] = req.email
+        if req.phone: user_data["phone"] = req.phone
 
         res = db.table("users").insert(user_data).execute()
         if not res.data:
@@ -106,37 +111,58 @@ async def register(req: RegisterRequest):
         print(f"Register error: {e}")
         raise HTTPException(500, f"Registration error: {str(e)}")
 
-
-@router.post("/verify-otp", response_model=TokenResponse)
-async def verify_otp_and_login(req: VerifyOTPRequest):
+@router.post("/verify-otp")
+async def verify_otp(data: VerifyOTPRequest):
     db = get_db()
 
-    ok = await verify_otp(req.identifier, req.code, req.purpose)
-    print(f"DEBUG OTP verify result: {ok}")
-    if not ok:
-        raise HTTPException(400, "Invalid or expired OTP. Please try again.")
+    # Verify OTP
+    otp_record = db.table("otp_codes").select("*")\
+        .eq("identifier", data.identifier)\
+        .eq("purpose", data.purpose)\
+        .eq("used", False)\
+        .execute()
 
-    try:
-        field = "email" if "@" in req.identifier else "phone"
-        res = db.table("users").select("*").eq(field, req.identifier).execute()
-        print(f"DEBUG verify - field: {field}, identifier: {req.identifier}, found: {res.data}")
+    if not otp_record.data:
+        raise HTTPException(400, "Invalid or expired OTP")
 
-        if not res.data:
-            raise HTTPException(404, "User not found. Please register first.")
-        user = res.data[0]
+    otp = otp_record.data[0]
 
-        db.table("users").update({"is_verified": True}).eq("id", user["id"]).execute()
+    # Check expiry
+    if datetime.fromisoformat(otp["expires_at"]) < datetime.now(timezone.utc):
+        raise HTTPException(400, "OTP has expired")
 
-        token = create_access_token({"sub": user["id"], "role": user["role"]})
+    # Mark OTP as used
+    db.table("otp_codes").update({"used": True})\
+        .eq("id", otp["id"]).execute()
 
-        return TokenResponse(
-            access_token=token,
-            user_id=user["id"],
-            role=user["role"],
-            full_name=user["full_name"],
-            is_new_user=req.purpose == "register",
+    # Get user
+    user = db.table("users").select("*")\
+        .eq("email", data.identifier)\
+        .or_(f"phone.eq.{data.identifier}")\
+        .execute()
+
+    if not user.data:
+        raise HTTPException(404, "User not found")
+
+    user_data = user.data[0]
+
+    # Role check — blocks cross-role login AND register
+    if data.expected_role and user_data["role"] != data.expected_role:
+        raise HTTPException(
+            403,
+            f"This account is registered as {user_data['role'].upper()}. "
+            f"Please use the {user_data['role'].upper()} login page."
         )
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(500, f"Login error: {str(e)}")
+
+    # Mark user as verified
+    db.table("users").update({"is_verified": True})\
+        .eq("id", user_data["id"]).execute()
+
+    # Generate JWT
+    token = create_token(user_data["id"], user_data["role"])
+
+    return {
+        "token":    token,
+        "user":     user_data,
+        "role":     user_data["role"],
+    }

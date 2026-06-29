@@ -30,9 +30,10 @@ class SendOTPRequest(BaseModel):
     method: str       # 'email' or 'sms'
 
 class VerifyOTPRequest(BaseModel):
-    identifier: str
-    code: str
-    purpose: str
+    identifier:    str
+    otp:           str
+    purpose:       str
+    expected_role: Optional[str] = None
 
 class TokenResponse(BaseModel):
     access_token: str

@@ -101,6 +101,7 @@ export default function AuthPage() {
         identifier,
         code,
         purpose: mode === 'register' ? 'register' : 'login',
+        expected_role: role,  
       })
       const { access_token, user_id, role: userRole, full_name } = res.data
       setAuth(access_token, { id: user_id, role: userRole, full_name })
