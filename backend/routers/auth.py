@@ -1,12 +1,7 @@
 from fastapi import APIRouter, HTTPException
-from models.schemas import (
-    RegisterRequest, SendOTPRequest,
-    VerifyOTPRequest, TokenResponse
-)
-from services.otp_service import (
-    generate_otp, save_otp, verify_otp,
-    send_email_otp, send_sms_otp
-)
+from datetime import datetime, timezone
+from models.schemas import RegisterRequest, SendOTPRequest, VerifyOTPRequest
+from services.otp_service import generate_otp, save_otp, send_email_otp, send_sms_otp
 from utils.auth import create_access_token
 from database import get_db
 
@@ -23,7 +18,7 @@ async def send_otp(req: SendOTPRequest):
         try:
             res = db.table("users").select("id,full_name").eq(field, req.identifier).execute()
             if not res.data:
-                raise HTTPException(404, f"No account found. Please register first.")
+                raise HTTPException(404, "No account found. Please register first.")
             name = res.data[0]["full_name"]
         except HTTPException:
             raise
@@ -39,7 +34,7 @@ async def send_otp(req: SendOTPRequest):
         ok = await send_sms_otp(req.identifier, otp)
 
     if not ok:
-        raise HTTPException(500, "Failed to send OTP. Check your SMTP/Twilio config.")
+        raise HTTPException(500, "Failed to send OTP.")
 
     return {"message": f"OTP sent to {req.identifier}", "method": req.method}
 
@@ -65,23 +60,19 @@ async def register(req: RegisterRequest):
                 existing_user = res.data[0]
 
         if existing_user:
-            # Check if role matches
             if existing_user["role"] != req.role:
                 raise HTTPException(
                     400,
                     f"This account is already registered as {existing_user['role'].upper()}. "
                     f"Please use the {existing_user['role'].upper()} login page instead."
                 )
-            return {
-                "message": "Account found. OTP will be sent.",
-                "user_id": existing_user["id"]
-            }
+            return {"message": "Account found. OTP will be sent.", "user_id": existing_user["id"]}
 
         user_data = {
-            "full_name":    req.full_name,
-            "role":         req.role,
-            "is_verified":  False,
-            "is_active":    True,
+            "full_name":   req.full_name,
+            "role":        req.role,
+            "is_verified": False,
+            "is_active":   True,
         }
         if req.email: user_data["email"] = req.email
         if req.phone: user_data["phone"] = req.phone
@@ -100,10 +91,7 @@ async def register(req: RegisterRequest):
         except Exception as e:
             print(f"Profile creation error (non-fatal): {e}")
 
-        return {
-            "message": "Registered successfully. OTP will be sent.",
-            "user_id": user["id"]
-        }
+        return {"message": "Registered successfully. OTP will be sent.", "user_id": user["id"]}
 
     except HTTPException:
         raise
@@ -111,10 +99,12 @@ async def register(req: RegisterRequest):
         print(f"Register error: {e}")
         raise HTTPException(500, f"Registration error: {str(e)}")
 
+
 @router.post("/verify-otp")
-async def verify_otp(data: VerifyOTPRequest):
+async def verify_otp_endpoint(data: VerifyOTPRequest):
     db = get_db()
 
+    # Get OTP record
     otp_record = db.table("otp_codes").select("*")\
         .eq("identifier", data.identifier)\
         .eq("purpose",    data.purpose)\
@@ -126,30 +116,36 @@ async def verify_otp(data: VerifyOTPRequest):
 
     otp = otp_record.data[0]
 
-    from datetime import datetime, timezone
+    # Check expiry
     if datetime.fromisoformat(otp["expires_at"]) < datetime.now(timezone.utc):
         raise HTTPException(400, "OTP has expired")
 
+    # Mark as used
     db.table("otp_codes").update({"used": True})\
         .eq("id", otp["id"]).execute()
 
+    # Get user — try email first then phone
     user = db.table("users").select("*")\
-        .eq("email", data.identifier)\
-        .or_(f"phone.eq.{data.identifier}")\
-        .execute()
+        .eq("email", data.identifier).execute()
+
+    if not user.data:
+        user = db.table("users").select("*")\
+            .eq("phone", data.identifier).execute()
 
     if not user.data:
         raise HTTPException(404, "User not found")
-
     user_data = user.data[0]
 
+    # Mark verified
     db.table("users").update({"is_verified": True})\
         .eq("id", user_data["id"]).execute()
 
-    token = create_token(user_data["id"], user_data["role"])
+    # Generate token
+    token =token = create_access_token({"sub": user_data["id"], "role": user_data["role"]})
 
     return {
-        "token": token,
-        "user":  user_data,
-        "role":  user_data["role"],
+        "access_token": token,
+        "user_id":      user_data["id"],
+        "role":         user_data["role"],
+        "full_name":    user_data["full_name"],
     }

@@ -31,7 +31,7 @@ class SendOTPRequest(BaseModel):
 
 class VerifyOTPRequest(BaseModel):
     identifier: str
-    otp:        str
+    code:       str
     purpose:    str
 
 class TokenResponse(BaseModel):
