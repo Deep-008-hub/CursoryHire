@@ -31,17 +31,25 @@ function JobForm({ onClose, onSaved }) {
     setSkillInp('')
   }
 
-  const save = async () => {
+ const save = async () => {
     if (!form.title)       return toast.error('Job title required')
     if (!form.description) return toast.error('Job description required')
     try {
       setLoading(true)
-      await api.post('/jobs/', {
+
+      const payload = {
         ...form,
-        salary_min:           form.salary_min || undefined,
-        salary_max:           form.salary_max || undefined,
-        application_deadline: form.application_deadline || undefined,
-      })
+        salary_min: form.salary_min || undefined,
+        salary_max: form.salary_max || undefined,
+      }
+
+      if (form.application_deadline) {
+        payload.application_deadline = new Date(form.application_deadline).toISOString()
+      } else {
+        delete payload.application_deadline
+      }
+
+      await api.post('/jobs/', payload)
       toast.success('Job posted!')
       onSaved()
       onClose()
@@ -105,9 +113,8 @@ function JobForm({ onClose, onSaved }) {
           <textarea className="input resize-none" rows={5}
             placeholder="Job description — include requirements, responsibilities, qualifications. Used by AI to rank candidates. *"
             value={form.description} onChange={e => set('description', e.target.value)} />
-          <div className="grid grid-cols-2 gap-3">
-            <input className="input" type="number" placeholder="Min salary (INR)" value={form.salary_min} onChange={e => set('salary_min', e.target.value)} />
-            <input className="input" type="number" placeholder="Max salary (INR)" value={form.salary_max} onChange={e => set('salary_max', e.target.value)} />
+          <div>
+            <input className="input" placeholder="CTC (e.g. 8 LPA, 12-15 LPA, Competitive)" value={form.salary_min} onChange={e => set('salary_min', e.target.value)} />
           </div>
           <button onClick={save} disabled={loading} className="btn-primary w-full justify-center py-3">
             {loading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Briefcase className="w-4 h-4" />}

@@ -87,8 +87,8 @@ class JobCreate(BaseModel):
     description: Optional[str] = None
     responsibilities: Optional[str] = None
     benefits: Optional[str] = None
-    salary_min: Optional[int] = None
-    salary_max: Optional[int] = None
+    salary_min: Optional[str] = None
+    salary_max: Optional[str] = None
     salary_currency: str = "INR"
     application_deadline: Optional[datetime] = None
 

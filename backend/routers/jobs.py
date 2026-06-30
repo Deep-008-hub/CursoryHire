@@ -11,10 +11,20 @@ router = APIRouter(prefix="/jobs", tags=["jobs"])
 async def create_job(data: JobCreate, user=Depends(get_current_hr)):
     db = get_db()
     job_data = data.model_dump()
+    
+    # Convert datetime to ISO string for Supabase
+    if job_data.get("application_deadline"):
+        job_data["application_deadline"] = job_data["application_deadline"].isoformat()
+    
     job_data["hr_user_id"] = user["id"]
     job_data["status"] = "active"
-    res = db.table("jobs").insert(job_data).execute()
-    return res.data[0]
+    
+    try:
+        res = db.table("jobs").insert(job_data).execute()
+        return res.data[0]
+    except Exception as e:
+        print(f"Job creation error: {e}")
+        raise HTTPException(500, f"Failed to post job: {str(e)}")
 
 @router.get("/")
 async def list_jobs(status: Optional[str] = None, user=Depends(get_current_user)):
