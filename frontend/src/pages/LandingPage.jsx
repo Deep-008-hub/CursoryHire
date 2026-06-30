@@ -45,9 +45,17 @@ export default function LandingPage() {
       </nav>
 
       {/* ── HERO ── */}
+     {/* ── HERO ── */}
       <section className="relative overflow-hidden">
-        {/* Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50 via-white to-violet-50" />
+        {/* Background image */}
+        <div className="absolute inset-0">
+          <img
+            src="https://images.unsplash.com/photo-1600880292203-757bb62b4baf?w=1600&q=80&auto=format&fit=crop"
+            alt="Professional team"
+            className="w-full h-full object-cover"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-white/95 via-white/90 to-violet-50/85" />
+        </div>
         <div className="absolute top-20 right-10 w-72 h-72 bg-blue-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse-slow" />
         <div className="absolute bottom-10 left-10 w-60 h-60 bg-violet-200 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-pulse-slow" />
 
