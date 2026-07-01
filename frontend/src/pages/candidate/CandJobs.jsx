@@ -52,7 +52,7 @@ function JobDetailModal({ job, onClose, onApply, applied, applying }) {
             {job.salary_min && (
               <span className="badge-green flex items-center gap-1.5">
                 <DollarSign className="w-3.5 h-3.5" />
-                ₹{job.salary_min.toLocaleString()} – ₹{job.salary_max?.toLocaleString()} / year
+               ₹{job.salary_max?.toLocaleString()}
               </span>
             )}
             {job.application_deadline && (

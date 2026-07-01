@@ -31,14 +31,13 @@ function InviteModal({ result, jobTitle, onClose, onSent }) {
 
   const send = async () => {
     if (!email) return toast.error('Enter candidate email')
+       console.log('Sending invitation:', { email, name, jobTitle, type, date, message })
     try {
       setLoading(true)
       await api.post('/invitations/send', {
-        screening_result_id: result.id,
         candidate_email:     email,
         candidate_name:      name,
         job_title:           jobTitle,
-        job_id:              jobId,   // add this
         message,
         interview_date:      date || undefined,
         interview_type:      type,
